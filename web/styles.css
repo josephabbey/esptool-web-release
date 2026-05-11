@@ -4,6 +4,8 @@
 
 body {
   margin: 0;
+  background: #fff;
+  color: #111;
   font-family: monospace;
   line-height: 1.5;
 }
@@ -74,4 +76,39 @@ pre {
   overflow: auto;
   background: #f5f5f5;
   max-height: 35em;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #111;
+    color: #eee;
+  }
+
+  a {
+    color: #8ab4f8;
+  }
+
+  select,
+  input,
+  button {
+    background: #1d1d1d;
+    color: #eee;
+    border: 1px solid #444;
+  }
+
+  .warning {
+    border-color: #ff8a8a;
+    background: #2a1414;
+    color: #ffd6d6;
+  }
+
+  th,
+  td {
+    border-bottom-color: #333;
+  }
+
+  pre {
+    background: #1a1a1a;
+    color: #eee;
+  }
 }
