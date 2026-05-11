@@ -4,7 +4,8 @@ This repository is a reusable GitHub Action. It does not build your firmware, up
 
 It packages an existing ESP-IDF `build/` output into:
 
-- release assets ready to upload to a GitHub release
+- a standalone release manifest ready to upload to a GitHub release
+- a CLI bundle zip containing the firmware payload and helper files
 - a `release-notes-snippet.md` file with a web-installer link and `esptool` fallback command
 - a static `esptool-js` web installer directory that you can publish to GitHub Pages
 
@@ -21,13 +22,15 @@ Run the action after your ESP-IDF project has already been built. It reads `flas
 - `pages-base-url`: optional public installer base URL such as `https://owner.github.io/repo/`
 - `pages-input-dir`: optional existing Pages checkout to merge old releases into the new output
 - `pages-output-dir`: output directory for the merged Pages site. Default: `dist/pages`
-- `release-assets-dir`: output directory for release assets. Default: `dist/release-assets`
+- `release-assets-dir`: output directory for standalone release assets. Default: `dist/release-assets`
+- `release-bundle-dir`: output directory for files that will be packed into the CLI zip. Default: `dist/release-bundle`
 - `manifest-asset-name`: release asset name for the web installer manifest. Default: `web-installer-manifest.json`
 - `site-title`, `site-description`, `default-baud-rate`: installer page settings
 
 ## Outputs
 
 - `release-assets-dir`
+- `release-bundle-dir`
 - `pages-dir`
 - `release-snippet-file`
 - `cli-bundle-file`
@@ -79,6 +82,7 @@ jobs:
           pages-base-url: ${{ env.PAGES_URL }}
           pages-output-dir: dist/pages
           release-assets-dir: dist/release-assets
+          release-bundle-dir: dist/release-bundle
           site-title: My Device Installer
           site-description: Install released firmware in Chrome or Edge.
 
@@ -88,7 +92,7 @@ jobs:
           tag_name: ${{ env.RELEASE_TAG }}
           overwrite_files: true
           files: |
-            ${{ steps.bundle.outputs.release-assets-dir }}/*
+            ${{ steps.bundle.outputs.manifest-file }}
             ${{ steps.bundle.outputs.cli-bundle-file }}
 
       - name: Update release body

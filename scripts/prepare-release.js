@@ -169,6 +169,7 @@ function main() {
   const projectPath = path.resolve(args.projectPath || ".");
   const buildDirectory = path.resolve(projectPath, args.buildDirectory || "build");
   const outDirectory = path.resolve(args.outDir || "dist/release-assets");
+  const bundleDirectory = path.resolve(args.bundleDir || "dist/release-bundle");
   const pagesInputDir = args.pagesInputDir ? path.resolve(args.pagesInputDir) : "";
   const pagesOutDir = path.resolve(args.pagesOutDir || "dist/pages");
   const staticSiteDir = path.resolve(args.staticSiteDir || path.join(__dirname, "..", "web"));
@@ -179,6 +180,7 @@ function main() {
   const defaultBaudRate = Number.parseInt(args.defaultBaudRate || "460800", 10);
   const siteTitle = args.siteTitle || "ESP Firmware Installer";
   const siteDescription = args.siteDescription || "Choose a firmware release and flash it from a Chromium-based browser with esptool-js.";
+  const releaseSnippetPath = path.resolve(args.releaseSnippetFile || path.join(path.dirname(outDirectory), "release-notes-snippet.md"));
 
   if (!releaseTag) {
     throw new Error("Missing release tag. Pass --releaseTag or set RELEASE_TAG.");
@@ -190,6 +192,8 @@ function main() {
   }
 
   ensureDir(outDirectory);
+  fs.rmSync(bundleDirectory, { recursive: true, force: true });
+  ensureDir(bundleDirectory);
 
   const flasherArgs = loadJson(flasherArgsPath);
   const parts = extractFlashFiles(flasherArgs).map((part) => {
@@ -201,7 +205,7 @@ function main() {
     const ext = path.extname(part.originalPath) || ".bin";
     const stem = sanitizeName(path.dirname(part.originalPath) === "." ? path.basename(part.originalPath, ext) : part.originalPath.slice(0, -ext.length));
     const assetName = `${part.offset}-${stem}${ext}`;
-    fs.copyFileSync(sourcePath, path.join(outDirectory, assetName));
+    fs.copyFileSync(sourcePath, path.join(bundleDirectory, assetName));
 
     return {
       offset: part.offset,
@@ -227,13 +231,13 @@ function main() {
   };
 
   fs.writeFileSync(path.join(outDirectory, manifestName), `${JSON.stringify(manifest, null, 2)}\n`);
-  fs.copyFileSync(flasherArgsPath, path.join(outDirectory, "flasher_args.json"));
+  fs.copyFileSync(flasherArgsPath, path.join(bundleDirectory, "flasher_args.json"));
 
-  copyIfPresent(path.join(buildDirectory, "flash_project_args"), path.join(outDirectory, "flash_project_args.txt"));
-  copyIfPresent(path.join(buildDirectory, "flash_app_args"), path.join(outDirectory, "flash_app_args.txt"));
+  copyIfPresent(path.join(buildDirectory, "flash_project_args"), path.join(bundleDirectory, "flash_project_args.txt"));
+  copyIfPresent(path.join(buildDirectory, "flash_app_args"), path.join(bundleDirectory, "flash_app_args.txt"));
 
-  fs.writeFileSync(path.join(outDirectory, "release-notes-snippet.md"), buildReleaseSnippet(manifest));
-  fs.writeFileSync(path.join(outDirectory, "cli-command.txt"), `${manifest.cli.command}\n`);
+  fs.writeFileSync(releaseSnippetPath, buildReleaseSnippet(manifest));
+  fs.writeFileSync(path.join(bundleDirectory, "cli-command.txt"), `${manifest.cli.command}\n`);
 
   fs.rmSync(pagesOutDir, { recursive: true, force: true });
   if (pagesInputDir && fs.existsSync(pagesInputDir)) {
@@ -254,7 +258,7 @@ function main() {
   };
 
   for (const part of manifest.parts) {
-    fs.copyFileSync(path.join(outDirectory, part.assetName), path.join(pagesOutDir, "releases", releaseTag, part.assetName));
+    fs.copyFileSync(path.join(bundleDirectory, part.assetName), path.join(pagesOutDir, "releases", releaseTag, part.assetName));
   }
 
   fs.writeFileSync(path.join(pagesOutDir, "releases", releaseTag, "manifest.json"), `${JSON.stringify(pageManifest, null, 2)}\n`);
@@ -276,7 +280,7 @@ function main() {
   });
   fs.writeFileSync(releaseIndexPath, `${JSON.stringify(nextIndex, null, 2)}\n`);
 
-  process.stdout.write(`${JSON.stringify({ manifestName, partCount: parts.length }, null, 2)}\n`);
+  process.stdout.write(`${JSON.stringify({ manifestName, partCount: parts.length, bundleDirectory, releaseSnippetPath }, null, 2)}\n`);
 }
 
 main();

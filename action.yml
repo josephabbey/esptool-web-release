@@ -30,9 +30,13 @@ inputs:
     required: false
     default: dist/pages
   release-assets-dir:
-    description: Directory to write release assets to.
+    description: Directory to write standalone release assets to.
     required: false
     default: dist/release-assets
+  release-bundle-dir:
+    description: Directory to stage files that will be packed into the CLI zip bundle.
+    required: false
+    default: dist/release-bundle
   manifest-asset-name:
     description: Asset name for the web installer manifest uploaded to the release.
     required: false
@@ -52,8 +56,11 @@ inputs:
 
 outputs:
   release-assets-dir:
-    description: Directory containing files to upload to the GitHub release.
+    description: Directory containing standalone files to upload to the GitHub release.
     value: ${{ steps.paths.outputs.release_assets_dir }}
+  release-bundle-dir:
+    description: Directory containing the files packed into the CLI zip bundle.
+    value: ${{ steps.paths.outputs.release_bundle_dir }}
   pages-dir:
     description: Directory containing the merged GitHub Pages site.
     value: ${{ steps.paths.outputs.pages_dir }}
@@ -77,6 +84,7 @@ runs:
           --projectPath "${{ inputs.project-path }}" \
           --buildDirectory "${{ inputs.build-directory }}" \
           --outDir "${{ inputs.release-assets-dir }}" \
+          --bundleDir "${{ inputs.release-bundle-dir }}" \
           --pagesInputDir "${{ inputs.pages-input-dir }}" \
           --pagesOutDir "${{ inputs.pages-output-dir }}" \
           --releaseTag "${{ inputs.release-tag }}" \
@@ -91,9 +99,9 @@ runs:
     - name: Build CLI bundle
       shell: bash
       run: |
-        mkdir -p "$(dirname "${{ inputs.release-assets-dir }}")"
-        rm -f "$(dirname "${{ inputs.release-assets-dir }}")/firmware-release-bundle.zip"
-        cd "${{ inputs.release-assets-dir }}"
+        mkdir -p "$(dirname "${{ inputs.release-bundle-dir }}")"
+        rm -f "$(dirname "${{ inputs.release-bundle-dir }}")/firmware-release-bundle.zip"
+        cd "${{ inputs.release-bundle-dir }}"
         zip -rq ../firmware-release-bundle.zip .
 
     - name: Publish output paths
@@ -102,8 +110,9 @@ runs:
       run: |
         {
           echo "release_assets_dir=${{ inputs.release-assets-dir }}"
+          echo "release_bundle_dir=${{ inputs.release-bundle-dir }}"
           echo "pages_dir=${{ inputs.pages-output-dir }}"
-          echo "release_snippet_file=${{ inputs.release-assets-dir }}/release-notes-snippet.md"
-          echo "cli_bundle_file=$(dirname "${{ inputs.release-assets-dir }}")/firmware-release-bundle.zip"
+          echo "release_snippet_file=$(dirname "${{ inputs.release-assets-dir }}")/release-notes-snippet.md"
+          echo "cli_bundle_file=$(dirname "${{ inputs.release-bundle-dir }}")/firmware-release-bundle.zip"
           echo "manifest_file=${{ inputs.release-assets-dir }}/${{ inputs.manifest-asset-name }}"
         } >> "$GITHUB_OUTPUT"
