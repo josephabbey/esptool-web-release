@@ -52,7 +52,7 @@ inputs:
   default-baud-rate:
     description: Default flashing baud rate for the web installer and CLI snippet.
     required: false
-    default: "460800"
+    default: "115200"
 
 outputs:
   release-assets-dir:

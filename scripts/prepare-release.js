@@ -49,7 +49,9 @@ function numericOffset(value) {
   if (typeof value !== "string") {
     throw new Error(`Unsupported flash offset: ${String(value)}`);
   }
-  return value.startsWith("0x") ? Number.parseInt(value, 16) : Number.parseInt(value, 10);
+  return value.startsWith("0x")
+    ? Number.parseInt(value, 16)
+    : Number.parseInt(value, 10);
 }
 
 function toHexOffset(value) {
@@ -72,7 +74,9 @@ function normalizeBaseUrl(input) {
 
 function extractFlashFiles(flasherArgs) {
   if (!flasherArgs.flash_files || typeof flasherArgs.flash_files !== "object") {
-    throw new Error("Expected flasher_args.json to contain a flash_files object.");
+    throw new Error(
+      "Expected flasher_args.json to contain a flash_files object.",
+    );
   }
 
   return Object.entries(flasherArgs.flash_files)
@@ -88,12 +92,12 @@ function buildCliCommand(manifest) {
   const extra = manifest.extraEsptoolArgs;
   const pieces = [
     "python -m esptool",
-    "--chip",
-    "auto",
-    "-p",
-    "<PORT>",
-    "-b",
-    String(manifest.baudRate),
+    // "--chip",
+    // "auto",
+    // "-p",
+    // "<PORT>",
+    // "-b",
+    // String(manifest.baudRate),
   ];
 
   if (extra.before) {
@@ -167,28 +171,44 @@ function upsertRelease(index, entry) {
 function main() {
   const args = parseArgs(process.argv);
   const projectPath = path.resolve(args.projectPath || ".");
-  const buildDirectory = path.resolve(projectPath, args.buildDirectory || "build");
+  const buildDirectory = path.resolve(
+    projectPath,
+    args.buildDirectory || "build",
+  );
   const outDirectory = path.resolve(args.outDir || "dist/release-assets");
   const bundleDirectory = path.resolve(args.bundleDir || "dist/release-bundle");
-  const pagesInputDir = args.pagesInputDir ? path.resolve(args.pagesInputDir) : "";
+  const pagesInputDir = args.pagesInputDir
+    ? path.resolve(args.pagesInputDir)
+    : "";
   const pagesOutDir = path.resolve(args.pagesOutDir || "dist/pages");
-  const staticSiteDir = path.resolve(args.staticSiteDir || path.join(__dirname, "..", "web"));
+  const staticSiteDir = path.resolve(
+    args.staticSiteDir || path.join(__dirname, "..", "web"),
+  );
   const releaseTag = args.releaseTag || process.env.RELEASE_TAG;
   const repository = args.repo || process.env.GITHUB_REPOSITORY;
   const pagesBaseUrl = normalizeBaseUrl(args.pagesBaseUrl || "");
   const manifestName = args.manifestAssetName || "web-installer-manifest.json";
-  const defaultBaudRate = Number.parseInt(args.defaultBaudRate || "460800", 10);
+  const defaultBaudRate = parseInt(args.defaultBaudRate || "115200");
   const siteTitle = args.siteTitle || "ESP Firmware Installer";
-  const siteDescription = args.siteDescription || "Choose a firmware release and flash it from a Chromium-based browser with esptool-js.";
-  const releaseSnippetPath = path.resolve(args.releaseSnippetFile || path.join(path.dirname(outDirectory), "release-notes-snippet.md"));
+  const siteDescription =
+    args.siteDescription ||
+    "Choose a firmware release and flash it from a Chromium-based browser with esptool-js.";
+  const releaseSnippetPath = path.resolve(
+    args.releaseSnippetFile ||
+      path.join(path.dirname(outDirectory), "release-notes-snippet.md"),
+  );
 
   if (!releaseTag) {
-    throw new Error("Missing release tag. Pass --releaseTag or set RELEASE_TAG.");
+    throw new Error(
+      "Missing release tag. Pass --releaseTag or set RELEASE_TAG.",
+    );
   }
 
   const flasherArgsPath = path.join(buildDirectory, "flasher_args.json");
   if (!fs.existsSync(flasherArgsPath)) {
-    throw new Error(`Missing ${flasherArgsPath}. Build the project first or point buildDirectory at the right folder.`);
+    throw new Error(
+      `Missing ${flasherArgsPath}. Build the project first or point buildDirectory at the right folder.`,
+    );
   }
 
   ensureDir(outDirectory);
@@ -203,7 +223,11 @@ function main() {
     }
 
     const ext = path.extname(part.originalPath) || ".bin";
-    const stem = sanitizeName(path.dirname(part.originalPath) === "." ? path.basename(part.originalPath, ext) : part.originalPath.slice(0, -ext.length));
+    const stem = sanitizeName(
+      path.dirname(part.originalPath) === "."
+        ? path.basename(part.originalPath, ext)
+        : part.originalPath.slice(0, -ext.length),
+    );
     const assetName = `${part.offset}-${stem}${ext}`;
     fs.copyFileSync(sourcePath, path.join(bundleDirectory, assetName));
 
@@ -219,8 +243,14 @@ function main() {
     tag: releaseTag,
     generatedAt: new Date().toISOString(),
     baudRate: defaultBaudRate,
-    installUrl: pagesBaseUrl ? `${pagesBaseUrl}?release=${encodeURIComponent(releaseTag)}` : (repository ? `${repoPagesUrl(repository)}?release=${encodeURIComponent(releaseTag)}` : ""),
-    releaseNotesUrl: repository ? `https://github.com/${repository}/releases/tag/${encodeURIComponent(releaseTag)}` : "",
+    installUrl: pagesBaseUrl
+      ? `${pagesBaseUrl}?release=${encodeURIComponent(releaseTag)}`
+      : repository
+        ? `${repoPagesUrl(repository)}?release=${encodeURIComponent(releaseTag)}`
+        : "",
+    releaseNotesUrl: repository
+      ? `https://github.com/${repository}/releases/tag/${encodeURIComponent(releaseTag)}`
+      : "",
     extraEsptoolArgs: flasherArgs.extra_esptool_args || {},
     parts,
   };
@@ -230,14 +260,29 @@ function main() {
     command: buildCliCommand(manifest),
   };
 
-  fs.writeFileSync(path.join(outDirectory, manifestName), `${JSON.stringify(manifest, null, 2)}\n`);
-  fs.copyFileSync(flasherArgsPath, path.join(bundleDirectory, "flasher_args.json"));
+  fs.writeFileSync(
+    path.join(outDirectory, manifestName),
+    `${JSON.stringify(manifest, null, 2)}\n`,
+  );
+  fs.copyFileSync(
+    flasherArgsPath,
+    path.join(bundleDirectory, "flasher_args.json"),
+  );
 
-  copyIfPresent(path.join(buildDirectory, "flash_project_args"), path.join(bundleDirectory, "flash_project_args.txt"));
-  copyIfPresent(path.join(buildDirectory, "flash_app_args"), path.join(bundleDirectory, "flash_app_args.txt"));
+  copyIfPresent(
+    path.join(buildDirectory, "flash_project_args"),
+    path.join(bundleDirectory, "flash_project_args.txt"),
+  );
+  copyIfPresent(
+    path.join(buildDirectory, "flash_app_args"),
+    path.join(bundleDirectory, "flash_app_args.txt"),
+  );
 
   fs.writeFileSync(releaseSnippetPath, buildReleaseSnippet(manifest));
-  fs.writeFileSync(path.join(bundleDirectory, "cli-command.txt"), `${manifest.cli.command}\n`);
+  fs.writeFileSync(
+    path.join(bundleDirectory, "cli-command.txt"),
+    `${manifest.cli.command}\n`,
+  );
 
   fs.rmSync(pagesOutDir, { recursive: true, force: true });
   if (pagesInputDir && fs.existsSync(pagesInputDir)) {
@@ -258,15 +303,28 @@ function main() {
   };
 
   for (const part of manifest.parts) {
-    fs.copyFileSync(path.join(bundleDirectory, part.assetName), path.join(pagesOutDir, "releases", releaseTag, part.assetName));
+    fs.copyFileSync(
+      path.join(bundleDirectory, part.assetName),
+      path.join(pagesOutDir, "releases", releaseTag, part.assetName),
+    );
   }
 
-  fs.writeFileSync(path.join(pagesOutDir, "releases", releaseTag, "manifest.json"), `${JSON.stringify(pageManifest, null, 2)}\n`);
-  fs.writeFileSync(path.join(pagesOutDir, "site-config.json"), `${JSON.stringify({
-    siteTitle,
-    siteDescription,
-    defaultBaudRate,
-  }, null, 2)}\n`);
+  fs.writeFileSync(
+    path.join(pagesOutDir, "releases", releaseTag, "manifest.json"),
+    `${JSON.stringify(pageManifest, null, 2)}\n`,
+  );
+  fs.writeFileSync(
+    path.join(pagesOutDir, "site-config.json"),
+    `${JSON.stringify(
+      {
+        siteTitle,
+        siteDescription,
+        defaultBaudRate,
+      },
+      null,
+      2,
+    )}\n`,
+  );
 
   const releaseIndexPath = path.join(pagesOutDir, "releases", "index.json");
   const existingIndex = loadExistingIndex(releaseIndexPath);
@@ -280,7 +338,9 @@ function main() {
   });
   fs.writeFileSync(releaseIndexPath, `${JSON.stringify(nextIndex, null, 2)}\n`);
 
-  process.stdout.write(`${JSON.stringify({ manifestName, partCount: parts.length, bundleDirectory, releaseSnippetPath }, null, 2)}\n`);
+  process.stdout.write(
+    `${JSON.stringify({ manifestName, partCount: parts.length, bundleDirectory, releaseSnippetPath }, null, 2)}\n`,
+  );
 }
 
 main();
