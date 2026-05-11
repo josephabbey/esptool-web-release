@@ -1,5 +1,9 @@
 name: ESP-IDF Web Release Bundle
 description: Package an ESP-IDF build into release assets, a release-notes snippet, and a GitHub Pages web installer payload.
+author: Joseph Abbey
+branding:
+  icon: globe
+  color: red
 
 inputs:
   release-tag:
