@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ESP Firmware Installer</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <h1 id="site-title">ESP Firmware Installer</h1>
+      <p id="site-description"></p>
+
+      <div id="serial-warning" class="warning" hidden>
+        This browser does not support the Web Serial API. Use Chrome, Edge, or the CLI command below.
+      </div>
+
+      <section class="controls">
+        <label for="release-select">Release</label>
+        <select id="release-select"></select>
+
+        <label for="baud-rate">Baud rate</label>
+        <input id="baud-rate" type="number" min="115200" step="115200">
+
+        <button id="connect-button" type="button">Connect and flash</button>
+        <a id="release-link" href="#" target="_blank" rel="noreferrer">Release notes</a>
+      </section>
+
+      <p><strong>Status:</strong> <span id="status-text">Loading release data.</span></p>
+
+      <section>
+        <h2>CLI fallback</h2>
+        <pre id="cli-command"></pre>
+      </section>
+
+      <section>
+        <h2>Firmware layout</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Offset</th>
+              <th>Asset</th>
+            </tr>
+          </thead>
+          <tbody id="parts-table"></tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>Log</h2>
+        <pre id="log"></pre>
+      </section>
+    </main>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

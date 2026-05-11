@@ -1,0 +1,109 @@
+name: ESP-IDF Web Release Bundle
+description: Package an ESP-IDF build into release assets, a release-notes snippet, and a GitHub Pages web installer payload.
+
+inputs:
+  release-tag:
+    description: Release tag to package.
+    required: true
+  project-path:
+    description: Path to the ESP-IDF project in the caller repository.
+    required: false
+    default: .
+  build-directory:
+    description: Build directory relative to project-path.
+    required: false
+    default: build
+  repository:
+    description: Repository name in owner/name form, used for release links.
+    required: false
+    default: ""
+  pages-base-url:
+    description: Public base URL for the installer page, for example https://owner.github.io/repo/.
+    required: false
+    default: ""
+  pages-input-dir:
+    description: Existing Pages content to merge into the new output directory.
+    required: false
+    default: ""
+  pages-output-dir:
+    description: Directory to write the merged Pages site to.
+    required: false
+    default: dist/pages
+  release-assets-dir:
+    description: Directory to write release assets to.
+    required: false
+    default: dist/release-assets
+  manifest-asset-name:
+    description: Asset name for the web installer manifest uploaded to the release.
+    required: false
+    default: web-installer-manifest.json
+  site-title:
+    description: Title shown on the installer page.
+    required: false
+    default: ESP Firmware Installer
+  site-description:
+    description: Description shown on the installer page.
+    required: false
+    default: Choose a firmware release and flash it from a Chromium-based browser with esptool-js.
+  default-baud-rate:
+    description: Default flashing baud rate for the web installer and CLI snippet.
+    required: false
+    default: "460800"
+
+outputs:
+  release-assets-dir:
+    description: Directory containing files to upload to the GitHub release.
+    value: ${{ steps.paths.outputs.release_assets_dir }}
+  pages-dir:
+    description: Directory containing the merged GitHub Pages site.
+    value: ${{ steps.paths.outputs.pages_dir }}
+  release-snippet-file:
+    description: Markdown file that can be appended to the release notes.
+    value: ${{ steps.paths.outputs.release_snippet_file }}
+  cli-bundle-file:
+    description: Zip file containing the release assets for CLI users.
+    value: ${{ steps.paths.outputs.cli_bundle_file }}
+  manifest-file:
+    description: Manifest file generated for the web installer.
+    value: ${{ steps.paths.outputs.manifest_file }}
+
+runs:
+  using: composite
+  steps:
+    - name: Package firmware assets
+      shell: bash
+      run: |
+        node "${{ github.action_path }}/scripts/prepare-release.js" \
+          --projectPath "${{ inputs.project-path }}" \
+          --buildDirectory "${{ inputs.build-directory }}" \
+          --outDir "${{ inputs.release-assets-dir }}" \
+          --pagesInputDir "${{ inputs.pages-input-dir }}" \
+          --pagesOutDir "${{ inputs.pages-output-dir }}" \
+          --releaseTag "${{ inputs.release-tag }}" \
+          --repo "${{ inputs.repository }}" \
+          --pagesBaseUrl "${{ inputs.pages-base-url }}" \
+          --manifestAssetName "${{ inputs.manifest-asset-name }}" \
+          --siteTitle "${{ inputs.site-title }}" \
+          --siteDescription "${{ inputs.site-description }}" \
+          --defaultBaudRate "${{ inputs.default-baud-rate }}" \
+          --staticSiteDir "${{ github.action_path }}/web"
+
+    - name: Build CLI bundle
+      shell: bash
+      run: |
+        mkdir -p "$(dirname "${{ inputs.release-assets-dir }}")"
+        rm -f "$(dirname "${{ inputs.release-assets-dir }}")/firmware-release-bundle.zip"
+        cd "${{ inputs.release-assets-dir }}"
+        zip -rq ../firmware-release-bundle.zip .
+
+    - name: Publish output paths
+      id: paths
+      shell: bash
+      run: |
+        {
+          echo "release_assets_dir=${{ inputs.release-assets-dir }}"
+          echo "pages_dir=${{ inputs.pages-output-dir }}"
+          echo "release_snippet_file=${{ inputs.release-assets-dir }}/release-notes-snippet.md"
+          echo "cli_bundle_file=$(dirname "${{ inputs.release-assets-dir }}")/firmware-release-bundle.zip"
+          echo "manifest_file=${{ inputs.release-assets-dir }}/${{ inputs.manifest-asset-name }}"
+        } >> "$GITHUB_OUTPUT"
