@@ -73,7 +73,7 @@ jobs:
 
       - name: Package web installer and release assets
         id: bundle
-        uses: josephabbey/esptool-web-releases@v1
+        uses: josephabbey/esptool-web-release@v1
         with:
           release-tag: ${{ env.RELEASE_TAG }}
           project-path: firmware
